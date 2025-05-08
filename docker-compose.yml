@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: fastapi_app
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/app_db
+      - REDIS_URL=redis://redis:6379
+    expose:
+      - 8000
+    networks:
+      - nginx_api
+      - api_db
+      - api_redis
+
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: app_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - api_db
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    networks:
+      - api_redis
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - web
+    networks:
+      - nginx_api
+
+volumes:
+  postgres_data:
+
+networks:
+  nginx_api:
+  api_db:
+  api_redis:
+
